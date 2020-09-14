@@ -174,8 +174,41 @@ div.addEventListener('click', function (e) {
 拖拉事件
 进度事件
 错误事件
-......
 
+>quote:Javascript权威指南与高级编程
+
+```
+(1) UI(用户界面)事件：当用户与页面上的元素交互时发生
+    1) load
+        当页面完全加载后(包括所有的图像、JS文件、CSS文件等)
+    2) unload
+        当页面完全卸载后触发，只要用户从一个页面切换到另外一个页面，就会发生，
+        此事件大多用于清除引用，以避免内存泄露
+    3) resize
+    4) scroll
+(3) 焦点事件
+    1) blur:不会冒泡，所有浏览器支持
+    2) focus:不会冒泡，所有浏览器支持
+    3) focusin:与focus等价，但是会冒泡，IE5+
+    4) focusout:与blur等价，IE5+
+(4) 鼠标事件
+    1) click
+    2) dblclick
+    3) mousedown
+    4) mouseenter:不冒泡
+    5) mouseleave:不冒泡
+    6) mousemove：当鼠标在元素内部移动时重复触发
+    7) mouseout
+    8) mouseover
+    9) mouseup
+    以上事件，除了mouseenter与mouseleave之外，其余都会冒泡
+(5) 滚轮事件
+(6) 文本事件：用户输入文本
+(7) 键盘事件
+(8) 合成事件：当输入法编辑器输入字符时触发
+(9) 变动事件：当底层DOM结构变化时触发
+(10) 变动名称事件：已废弃
+```
 ## 应用-事件代理
 
 由于事件会在冒泡阶段向上传播到父节点，因此可以把子节点的监听函数定义在父节点上，由父节点的监听函数统一处理多个子元素的事件。这种方法叫做事件的代理（delegation）
