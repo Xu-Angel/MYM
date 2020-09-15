@@ -8,6 +8,22 @@
 
 在DOM中，由用户处触发的、API生成的、脚本触发的、自定义的事件都归类于DOM-事件中。
 
+## 事件流定义
+
+![eventflow](./eventflow.svg)
+
+[event-flow](https://www.w3.org/TR/DOM-Level-3-Events/#event-flow)
+
+DOM结构是一个树型结构，当一个HTML元素触发一个事件时，该事件会在元素结点与根结点之间的路径传播，路径所经过的结点都会收到该事件，这个传播过程可称为 DOM 事件流（DOM event flow ）。
+
+传播（Propagation）按顺序分三个阶段（Any event taking place in the W3C event model is first captured until it reaches the target element and then bubbles up again）：
+
+- 捕获阶段（capture phrase，从根节点window到目标节点，即最近的、最精确的元素节点）
+- 目标阶段（target phrase，目标节点上的事件触发按代码执行顺序触发）
+- 冒泡阶段（bubbling phrase，从目标节点到根节点 ）
+
+*[以往事件流顺序兼容问题](https://www.quirksmode.org/js/events_order.html#link4)*
+
 **分类：**
 
 - HTML 的 on- 属性
@@ -34,20 +50,6 @@
   - 同一个事件可以添加多个监听函数。
   - 能够指定在哪个阶段（捕获阶段还是冒泡阶段）触发监听函数。
   - 除了 DOM 节点，其他对象（比如window、XMLHttpRequest等）也有这个接口，它等于是整个 JavaScript 统一的监听函数接口。
-
-## 事件流定义
-
-[event-flow](https://www.w3.org/TR/DOM-Level-3-Events/#event-flow)
-
-DOM结构是一个树型结构，当一个HTML元素触发一个事件时，该事件会在元素结点与根结点之间的路径传播，路径所经过的结点都会收到该事件，这个传播过程可称为 DOM 事件流（DOM event flow ）。
-
-传播（Propagation）按顺序分三个阶段（Any event taking place in the W3C event model is first captured until it reaches the target element and then bubbles up again）：
-
-- 捕获阶段（capture phrase，从根节点window到目标节点，即最近的、最精确的元素节点）
-- 目标阶段（target phrase，目标节点上的事件触发按代码执行顺序触发）
-- 冒泡阶段（bubbling phrase，从目标节点到根节点 ）
-
-*[以往事件流顺序兼容问题](https://www.quirksmode.org/js/events_order.html#link4)*
 
 ## EventTarget接口
 
@@ -222,8 +224,125 @@ ul.addEventListener('click', function (event) {
   }
 });
 ```
+## 框架中的事件
 
-### QA
+### React
+- 事件池 SyntheticEvent对象 同步访问与异步访问的不同
+- 通过将事件 normalize 以让他们在不同浏览器中拥有一致的属性，默认的都设置了函数在冒泡阶段被触发。如需注册捕获阶段的事件处理函数，则应为事件名添加 Capture。例如，处理捕获阶段的点击事件请使用 onClickCapture，而不是 onClick
+
+### 微信小程序
+- bind事件绑定不会阻止冒泡事件向上冒泡，catch事件绑定可以阻止冒泡事件向上冒泡。
+
+    如在下边这个例子中，点击 `inner view` 会先后调用`handleTap3`和`handleTap2`(因为tap事件会冒泡到 `middle view`，而 `middle view` 阻止了 tap 事件冒泡，不再向父节点传递)，点击 `middle view` 会触发`handleTap2`，点击 `outer view` 会触发`handleTap1`。
+
+    ```html
+    <view id="outer" bindtap="handleTap1">
+      outer view
+      <view id="middle" catchtap="handleTap2">
+        middle view <view id="inner" bindtap="handleTap3"> inner view </view>
+      </view>
+    </view>
+    ```
+- 采用`capture-bind`、`capture-catch`关键字，后者将中断捕获阶段和取消冒泡阶段。
+
+  在下面的代码中，点击 `inner view` 会先后调用`handleTap2`、`handleTap4`、`handleTap3`、`handleTap1`。
+
+  ```html
+  <view
+    id="outer"
+    bind:touchstart="handleTap1"
+    capture-bind:touchstart="handleTap2"
+  >
+    outer view
+    <view
+      id="inner"
+      bind:touchstart="handleTap3"
+      capture-bind:touchstart="handleTap4"
+    >
+      inner view
+    </view>
+  </view>
+  ```
+
+  如果将上面代码中的第一个`capture-bind`改为`capture-catch`，将只触发`handleTap2`。
+
+  ```html
+
+### JQuery
+
+使用父级元素委托冒泡事件
+
+```js
+// good
+$('ul').click(function(e){
+	var $clicked = $(e.target);
+	$clicked.css('background', 'red');
+});
+
+// 或者使用 jQuery 1.7 提供的 on() 方法：
+$('ul').on('click', 'td', function(){
+	$(this).css('background', 'red');
+});
+
+// bad
+$('ul li').click(function(){
+	$(this).css('background', 'red');
+});
+>quote:锋利的JQuery
+```
+### Flutter交互事件中的指针事件
+
+与浏览器中的事件冒泡机制类似，事件会从这个最内层的组件开始，沿着组件树向根节点向上冒泡分发。不过 Flutter 无法像浏览器冒泡那样取消或者停止事件进一步分发，我们只能通过 hitTestBehavior 去调整组件在命中测试期内应该如何表现，比如把触摸事件交给子组件，或者交给其视图层级之下的组件去响应。关于组件层面的原始指针事件的监听，Flutter 提供了 Listener Widget，可以监听其子 Widget 的原始指针事件。
+
+## 自定义事件
+
+- `new Event()` 
+
+  ```js
+  var btn = document.querySelector('.button');
+  var ev = new Event('test', {
+      // 以下属性都是内置的
+      bubbles: true,
+      cancelable: true
+  });
+
+  btn.addEventListener('test', function(e){
+      console.log(e.bubbles);         // true
+      console.log(e.cancelable);      // true
+      console.log(e.detail);          // undefined
+  }, false);  // 事件在冒泡阶段执行，默认就为false
+
+  btn.dispatchEvent(ev);
+  ```
+
+- `new CustomEvent()` 
+
+  [CustomEvent](https://developer.mozilla.org/zh-CN/docs/Web/API/CustomEvent)
+
+  [CustomEvent()](https://developer.mozilla.org/zh-CN/docs/Web/API/CustomEvent/CustomEvent)
+  ```js
+  var btn = document.querySelector('.button');
+  // add an appropriate event listener
+  btn.addEventListener('test', function(e){
+      console.log(e.bubbles);         // true
+      console.log(e.cancelable);      // true
+      console.log(e.detail);          // good
+  }, false);  // 事件在冒泡阶段执行，默认就为false
+  // create and dispatch the event
+  var ev = new CustomEvent('test', {
+      // 以下属性都是内置的
+      bubbles: true,
+      cancelable: true,
+      detail:'good'
+  });
+
+  btn.dispatchEvent(ev);
+  ```
+
+> `new customEvent()` 与 `new Event()`之间的差别在于，<br>
+`new customEvent()`可以在`event.detail`属性里携带自定义数据的功能(`event.detail`的值为`good`)
+
+## QA
 
 - 编写一个通用的事件监听函数
 - 简述事件流
@@ -232,6 +351,12 @@ ul.addEventListener('click', function (event) {
 
   事件委托， 现实意义上讲是指将自己的事务嘱托他人代为处理。js中是 允许我们不必为某些特定的节点添加事件监听器，而是将事件监听器添加到（这些节点的）某个 parent节点上。利用事件冒泡，去找到匹配的子节点元素，然后做出相应的事件响应。是主要用来解决“事件处理程序过多”这个问题的。
   经典例子：ul 里面的li的事件绑定。
+  - 为什么用事件委托
+
+    1. 绑定的事件越多，浏览器内存占用越大，影响性能。
+    2. ajax局部刷新，需要重新绑定事件，大部分只是数据的更新，重新绑定，代码耦合度过大，维护成本大增。
+    3. 部分浏览器移除元素时，绑定的事件没有及时移除，导致内存泄漏。
+
   - 好处：
     1. 简化了初始化的过程，减少了多余的事件处理函数，进而节省了内存。提高性能。
     2. 新添加的元素还会有之前的事件。
