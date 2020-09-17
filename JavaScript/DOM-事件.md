@@ -65,11 +65,30 @@ DOM结构是一个树型结构，当一个HTML元素触发一个事件时，该�
 
 Grammer
 
+useCapture【是否捕获】: 默认`false`
+
 ```js
 target.addEventListener(type, listener, options);
 target.addEventListener(type, listener, useCapture);
 target.addEventListener(type, listener, useCapture, wantsUntrusted  );  // Gecko/Mozilla only
 ```
+### removeEventListener
+
+[removeEventListener](https://developer.mozilla.org/zh-CN/docs/Web/API/EventTarget/removeEventListener)
+
+删除事件监听需要提供相同的 `type` 和 `listener` 、`capture/useCapture `参数给 `removeEventListener()`, `options`参数不同,在不同的实现上表现不一。
+
+所以最好使用与调用 `addEventListener()` 时配置的参数去调用`removeEventListener()`
+
+一个 `EventTarget` 上的 `EventListener` 被移除之后，如果此事件正在执行，会立即停止。 `EventListener` 移除之后不能被触发，但可以重新绑定
+
+Grammer
+
+```js
+target.removeEventListener(type, listener[, options]);
+target.removeEventListener(type, listener[, useCapture]);
+```
+`useCapture`【是否捕获】: 默认`false`,如果同一个监听事件分别为“事件捕获”和“事件冒泡”注册了一次，这两次事件需要分别移除。两者不会互相干扰。移除捕获监听器不会影响非捕获版本的相同监听器，反之亦然。
 
 ## Event对象
 
